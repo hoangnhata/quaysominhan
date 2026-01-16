@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import LuckyDrawPage from "./pages/LuckyDrawPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AwardsPage from "./pages/awards/AwardsPage";
 import {
   Box,
   AppBar,
@@ -31,8 +32,8 @@ const Navigation = () => {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Don't show navigation on Lucky Draw page (fullscreen)
-  if (currentPath === "/") {
+  // Don't show navigation on Lucky Draw page (fullscreen) or Awards page
+  if (currentPath === "/" || currentPath === "/awards") {
     return null;
   }
 
@@ -69,6 +70,7 @@ function AppContent() {
       <Routes>
         <Route path="/" element={<LuckyDrawPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/awards" element={<AwardsPage />} />
       </Routes>
     </Box>
   );
