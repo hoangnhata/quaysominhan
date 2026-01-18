@@ -122,8 +122,8 @@ const OutstandingTeam = ({ data, onBack }) => {
               <Box sx={{ width: { xs: "100%", md: "50%" }, position: "relative" }}>
                 <CardMedia
                   component="img"
-                  image={data.image}
-                  alt={data.name}
+                  image={data?.imageUrl}
+                  alt={data?.name}
                   sx={{
                     height: "100%",
                     minHeight: 500,
@@ -144,7 +144,7 @@ const OutstandingTeam = ({ data, onBack }) => {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2, color: "#D4AF37", mb: 3 }}>
                   <TrophyIcon sx={{ fontSize: 40 }} />
                   <Typography variant="overline" sx={{ letterSpacing: 4, fontWeight: 700, fontSize: "1rem" }}>
-                    DANH HIỆU CAO QUÝ
+                    {data?.badge || "DANH HIỆU CAO QUÝ"}
                   </Typography>
                 </Box>
 
@@ -161,7 +161,7 @@ const OutstandingTeam = ({ data, onBack }) => {
                     lineHeight: 1.1,
                   }}
                 >
-                  {data.name}
+                  {data?.name}
                 </Typography>
 
                 <Typography
@@ -174,7 +174,7 @@ const OutstandingTeam = ({ data, onBack }) => {
                     opacity: 0.9,
                   }}
                 >
-                  {data.title}
+                  {data?.title}
                 </Typography>
 
                 <Typography
@@ -187,7 +187,7 @@ const OutstandingTeam = ({ data, onBack }) => {
                     lineHeight: 1.6,
                   }}
                 >
-                  “{data.description}”
+                  “{data?.description}”
                 </Typography>
               </CardContent>
             </Card>

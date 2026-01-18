@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Typography,
@@ -13,6 +14,7 @@ import {
   Container,
   Backdrop,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import {
@@ -31,6 +33,8 @@ import {
   NavigateNext,
   HealthAndSafety,
   MedicalServices,
+  ArrowBack,
+  Celebration,
 } from "@mui/icons-material";
 import axios from "axios";
 import confetti from "canvas-confetti";
@@ -55,6 +59,7 @@ const COLORS = {
 };
 
 const LuckyDrawPage = () => {
+  const navigate = useNavigate();
   const [participants, setParticipants] = useState([]);
   const [gameState, setGameState] = useState("IDLE"); // 'IDLE', 'SPINNING', 'WINNER'
   const [winner, setWinner] = useState(null);
@@ -424,16 +429,34 @@ const LuckyDrawPage = () => {
             </Typography>
           </Box>
         </Box>
-        <IconButton
-          onClick={toggleFullscreen}
-          sx={{
-            color: COLORS.primary,
-            bgcolor: COLORS.lightBlue,
-            "&:hover": { bgcolor: "#b3e5fc" },
-          }}
-        >
-          {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
-        </IconButton>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Tooltip title="Trang vinh danh">
+            <IconButton
+              onClick={() => navigate("/awards")}
+              sx={{
+                color: "#D4AF37",
+                bgcolor: "rgba(212, 175, 55, 0.1)",
+                "&:hover": {
+                  bgcolor: "rgba(212, 175, 55, 0.2)",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              <Celebration />
+            </IconButton>
+          </Tooltip>
+          <IconButton
+            onClick={toggleFullscreen}
+            sx={{
+              color: COLORS.primary,
+              bgcolor: COLORS.lightBlue,
+              "&:hover": { bgcolor: "#b3e5fc" },
+            }}
+          >
+            {isFullscreen ? <FullscreenExit /> : <Fullscreen />}
+          </IconButton>
+        </Box>
       </Box>
 
       {/* MAIN CONTENT AREA */}
@@ -1256,76 +1279,76 @@ const LuckyDrawPage = () => {
                     overflow: "hidden",
                   }}
                 >
-                  <Avatar
-                    src={win.participant.imageUrl}
-                    sx={{
-                      width: 56,
-                      height: 56,
-                      border:
-                        idx === 0
-                          ? `3px solid ${COLORS.primary}`
-                          : `2px solid ${COLORS.lightBlue}`,
-                    }}
-                  >
-                    {win.participant.name.charAt(0)}
-                  </Avatar>
-                  <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                    <Typography
-                      variant="subtitle1"
+                    <Avatar
+                      src={win.participant?.imageUrl}
                       sx={{
-                        fontWeight: 800,
-                        color: COLORS.textPrimary,
-                        lineHeight: 1.2,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        width: 56,
+                        height: 56,
+                        border:
+                          idx === 0
+                            ? `3px solid ${COLORS.primary}`
+                            : `2px solid ${COLORS.lightBlue}`,
                       }}
                     >
-                      {win.participant.name}
-                    </Typography>
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: COLORS.textSecondary,
-                        mt: 0.2,
-                        fontWeight: 500,
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        fontSize: "0.8rem",
-                      }}
-                    >
-                      {win.participant.email}
-                    </Typography>
-                    <Box
-                      sx={{
-                        mt: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <Chip
-                        icon={
-                          <EmojiEvents
-                            sx={{
-                              fontSize: "13px !important",
-                              color: COLORS.gold,
-                            }}
-                          />
-                        }
-                        label={win.prize.name}
-                        size="small"
+                      {(win.participant?.name || "U").charAt(0)}
+                    </Avatar>
+                    <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                      <Typography
+                        variant="subtitle1"
                         sx={{
-                          height: 20,
-                          fontSize: "0.7rem",
-                          fontWeight: 700,
-                          bgcolor: "rgba(0, 137, 123, 0.1)",
-                          color: COLORS.primary,
+                          fontWeight: 800,
+                          color: COLORS.textPrimary,
+                          lineHeight: 1.2,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         }}
-                      />
+                      >
+                        {win.participant?.name || "N/A"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          color: COLORS.textSecondary,
+                          mt: 0.2,
+                          fontWeight: 500,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {win.participant?.email || ""}
+                      </Typography>
+                      <Box
+                        sx={{
+                          mt: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
+                        <Chip
+                          icon={
+                            <EmojiEvents
+                              sx={{
+                                fontSize: "13px !important",
+                                color: COLORS.gold,
+                              }}
+                            />
+                          }
+                          label={win.prize?.name || "N/A"}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.7rem",
+                            fontWeight: 700,
+                            bgcolor: "rgba(0, 137, 123, 0.1)",
+                            color: COLORS.primary,
+                          }}
+                        />
+                      </Box>
                     </Box>
-                  </Box>
                 </Paper>
               ))}
             </AnimatePresence>
@@ -1468,7 +1491,7 @@ const LuckyDrawPage = () => {
                           border: `12px solid ${COLORS.lightTeal}`,
                         }}
                       >
-                        {winner.participant.imageUrl ? (
+                        {winner.participant?.imageUrl ? (
                           <Box
                             component="img"
                             src={winner.participant.imageUrl}
@@ -1516,7 +1539,7 @@ const LuckyDrawPage = () => {
                               mb: 1,
                             }}
                           >
-                            {winner.participant.name}
+                            {winner.participant?.name || "N/A"}
                           </Typography>
                           <Typography
                             variant="h3"
@@ -1526,7 +1549,7 @@ const LuckyDrawPage = () => {
                               opacity: 0.9,
                             }}
                           >
-                            {winner.participant.email}
+                            {winner.participant?.email || ""}
                           </Typography>
                         </Box>
 
@@ -1570,7 +1593,7 @@ const LuckyDrawPage = () => {
                               fontSize: { xs: "2.5rem", md: "4rem" },
                             }}
                           >
-                            {winner.prize.name}
+                            {winner.prize?.name || "N/A"}
                           </Typography>
                         </Box>
                       </Stack>

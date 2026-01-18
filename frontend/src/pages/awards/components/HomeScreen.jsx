@@ -1,8 +1,18 @@
 import React from "react";
-import { Box, Typography, Grid, Button } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Grid,
+  Button,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import { motion } from "framer-motion";
+import { ArrowBack } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 const HomeScreen = ({ onStart, onSelectCategory }) => {
+  const navigate = useNavigate();
   const categories = [
     { id: "TEAM", title: "TẬP THỂ XUẤT SẮC" },
     { id: "LEADER", title: "TRƯỞNG KHOA XUẤT SẮC" },
@@ -78,6 +88,36 @@ const HomeScreen = ({ onStart, onSelectCategory }) => {
             transform: "rotate(15deg)",
           }}
         />
+      </Box>
+
+      {/* Back Button */}
+      <Box
+        sx={{
+          position: "absolute",
+          top: 30,
+          left: 30,
+          zIndex: 100,
+        }}
+      >
+        <Tooltip title="Quay lại trang chính">
+          <IconButton
+            onClick={() => navigate("/")}
+            sx={{
+              color: "#D4AF37",
+              border: "1px solid rgba(212, 175, 55, 0.3)",
+              bgcolor: "rgba(15, 42, 68, 0.4)",
+              backdropFilter: "blur(10px)",
+              "&:hover": {
+                bgcolor: "rgba(212, 175, 55, 0.1)",
+                transform: "translateX(-5px)",
+                borderColor: "#D4AF37",
+              },
+              transition: "all 0.3s ease",
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+        </Tooltip>
       </Box>
 
       {/* Stars Background */}

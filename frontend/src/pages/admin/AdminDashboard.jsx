@@ -43,6 +43,7 @@ import {
   CheckCircle,
   FileDownload,
   HistoryEdu,
+  WorkspacePremium,
 } from "@mui/icons-material";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -50,11 +51,13 @@ import { useSnackbar } from "notistack";
 import { motion } from "framer-motion";
 
 const API_BASE_URL = "http://localhost:8080/api/lucky-draw";
+const HONORS_API_URL = "http://localhost:8080/api/honors";
 
 const AdminDashboard = () => {
   const [participants, setParticipants] = useState([]);
   const [prizes, setPrizes] = useState([]);
   const [winners, setWinners] = useState([]);
+  const [honors, setHonors] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showOnlyNonWinners, setShowOnlyNonWinners] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -75,20 +78,46 @@ const AdminDashboard = () => {
     email: "", // Department
   });
 
+  const [openHonorDialog, setOpenHonorDialog] = useState(false);
+  const [currentHonor, setCurrentHonor] = useState({
+    name: "",
+    title: "",
+    category: "nhanVienXuatSac",
+    description: "",
+    imageUrl: "",
+    badge: "",
+  });
+
+  const categories = {
+    tapTheXuatSac: "Tập thể xuất sắc",
+    truongKhoaXuatSac: "Trưởng khoa xuất sắc",
+    nhanVienXuatSac: "Nhân viên xuất sắc",
+    nhanVienCongHien: "Nhân viên cống hiến",
+  };
+
+  const defaultBadges = {
+    tapTheXuatSac: "🏆 TẬP THỂ XUẤT SẮC",
+    truongKhoaXuatSac: "⭐ TRƯỞNG KHOA XUẤT SẮC",
+    nhanVienXuatSac: "🏅 NHÂN VIÊN XUẤT SẮC",
+    nhanVienCongHien: "🤍 NHÂN VIÊN CỐNG HIẾN",
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
     try {
-      const [partRes, prizeRes, winnersRes] = await Promise.all([
+      const [partRes, prizeRes, winnersRes, honorsRes] = await Promise.all([
         axios.get(`${API_BASE_URL}/admin/participants`),
         axios.get(`${API_BASE_URL}/prizes`),
         axios.get(`${API_BASE_URL}/recent-winners`),
+        axios.get(HONORS_API_URL),
       ]);
       setParticipants(partRes.data);
       setPrizes(prizeRes.data);
       setWinners(winnersRes.data);
+      setHonors(honorsRes.data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -127,6 +156,55 @@ const AdminDashboard = () => {
     reader.readAsBinaryString(file);
   };
 
+  const handleHonorExcelImport = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: "binary" });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws);
+
+      const mapCategory = (val) => {
+        if (!val) return "nhanVienXuatSac";
+        const v = String(val).toLowerCase().trim();
+        if (v.includes("tập thể") || v === "tapthexuatsac") return "tapTheXuatSac";
+        if (v.includes("trưởng khoa") || v === "truongkhoaxuatsac") return "truongKhoaXuatSac";
+        if (v.includes("cống hiến") || v === "nhanvienconghien") return "nhanVienCongHien";
+        if (v.includes("nhân viên") || v.includes("nhanvien") || v === "nhanvienxuatsac") return "nhanVienXuatSac";
+        return "nhanVienXuatSac"; // Mặc định
+      };
+
+      try {
+        setLoading(true);
+        for (const row of data) {
+          // Kiểm tra nhiều tiêu đề cột khác nhau cho linh hoạt
+          const categoryRaw = row["Phân loại"] || row["Loại"] || row["Category"] || row["Type"];
+          const category = mapCategory(categoryRaw);
+          const badge = row["Huy hiệu"] || row["Badge"] || defaultBadges[category] || "";
+          
+          await axios.post(HONORS_API_URL, {
+            name: row["Tên"] || row["Name"] || row["Họ tên"] || row["Họ và Tên"],
+            title: row["Chức vụ"] || row["Title"] || row["Tiêu đề"] || "",
+            category: category,
+            description: row["Mô tả"] || row["Description"] || "",
+            badge: badge,
+          });
+        }
+        enqueueSnackbar(`Đã nhập thành công ${data.length} danh hiệu`, { variant: "success" });
+        fetchData();
+      } catch (err) {
+        enqueueSnackbar("Lỗi khi nhập dữ liệu vinh danh từ Excel", { variant: "error" });
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const handleImageUpload = async (e, type) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -142,8 +220,10 @@ const AdminDashboard = () => {
       
       if (type === "participant") {
         setCurrentParticipant({ ...currentParticipant, imageUrl: res.data.url });
-      } else {
+      } else if (type === "prize") {
         setCurrentPrize({ ...currentPrize, imageUrl: res.data.url });
+      } else if (type === "honor") {
+        setCurrentHonor({ ...currentHonor, imageUrl: res.data.url });
       }
       enqueueSnackbar("Tải ảnh thành công", { variant: "success" });
     } catch (err) {
@@ -256,6 +336,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleSaveHonor = async () => {
+    try {
+      if (currentHonor.id) {
+        await axios.put(`${HONORS_API_URL}/${currentHonor.id}`, currentHonor);
+      } else {
+        await axios.post(HONORS_API_URL, currentHonor);
+      }
+      setOpenHonorDialog(false);
+      fetchData();
+      enqueueSnackbar("Lưu danh hiệu vinh danh thành công", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar("Lỗi khi lưu danh hiệu", { variant: "error" });
+    }
+  };
+
+  const handleDeleteHonor = async (id) => {
+    if (!window.confirm("Xác nhận xóa danh hiệu này?")) return;
+    try {
+      await axios.delete(`${HONORS_API_URL}/${id}`);
+      fetchData();
+      enqueueSnackbar("Đã xóa danh hiệu vinh danh", { variant: "info" });
+    } catch (err) {
+      enqueueSnackbar("Lỗi khi xóa", { variant: "error" });
+    }
+  };
+
   return (
     <Box sx={{ p: 0 }}>
       <Box sx={{ p: 4 }}>
@@ -272,6 +378,7 @@ const AdminDashboard = () => {
             <Tab icon={<People />} iconPosition="start" label="Nhân Viên" />
             <Tab icon={<EmojiEvents />} iconPosition="start" label="Giải Thưởng" />
             <Tab icon={<CheckCircle />} iconPosition="start" label="Danh Sách Trúng Quà" />
+            <Tab icon={<WorkspacePremium />} iconPosition="start" label="Vinh Danh" />
           </Tabs>
 
           <Button
@@ -350,8 +457,13 @@ const AdminDashboard = () => {
                   <TableBody>
                     {participants
                       .filter((p) => {
-                        const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (p.checkInCode && p.checkInCode.toLowerCase().includes(searchTerm.toLowerCase()));
+                        const name = p.name || "";
+                        const code = p.checkInCode || "";
+                        const search = searchTerm.toLowerCase();
+                        
+                        const matchesSearch = name.toLowerCase().includes(search) ||
+                          code.toLowerCase().includes(search);
+                          
                         const matchesWinnerFilter = showOnlyNonWinners ? !p.isWinner : true;
                         return matchesSearch && matchesWinnerFilter;
                       })
@@ -359,8 +471,8 @@ const AdminDashboard = () => {
                       <TableRow key={p.id} hover>
                         <TableCell>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                            <Avatar src={p.imageUrl} sx={{ width: 40, height: 40 }}>{p.name.charAt(0)}</Avatar>
-                            <Typography variant="body1" fontWeight={600}>{p.name}</Typography>
+                            <Avatar src={p.imageUrl} sx={{ width: 40, height: 40 }}>{(p.name || "U").charAt(0)}</Avatar>
+                            <Typography variant="body1" fontWeight={600}>{p.name || "N/A"}</Typography>
                           </Box>
                         </TableCell>
                         <TableCell>{p.email}</TableCell>
@@ -504,20 +616,20 @@ const AdminDashboard = () => {
                       <TableRow key={win.id} hover>
                         <TableCell>
                           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                            <Avatar src={win.participant.imageUrl} sx={{ width: 40, height: 40 }}>
-                              {win.participant.name.charAt(0)}
+                            <Avatar src={win.participant?.imageUrl} sx={{ width: 40, height: 40 }}>
+                              {(win.participant?.name || "U").charAt(0)}
                             </Avatar>
                             <Typography variant="body1" fontWeight={600}>
-                              {win.participant.name}
+                              {win.participant?.name || "N/A"}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell>{win.participant.email}</TableCell>
-                        <TableCell><code>{win.participant.checkInCode}</code></TableCell>
+                        <TableCell>{win.participant?.email || "N/A"}</TableCell>
+                        <TableCell><code>{win.participant?.checkInCode || "N/A"}</code></TableCell>
                         <TableCell>
                           <Chip 
                             icon={<EmojiEvents fontSize="small" />}
-                            label={win.prize.name} 
+                            label={win.prize?.name || "N/A"} 
                             sx={{ bgcolor: "#e0f2f1", color: "#00796b", fontWeight: 800, px: 1 }}
                           />
                         </TableCell>
@@ -540,6 +652,85 @@ const AdminDashboard = () => {
                         </TableCell>
                       </TableRow>
                     )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </motion.div>
+        )}
+
+        {/* TAB 4: VINH DANH */}
+        {currentTab === 3 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+            <Paper sx={{ p: 3, borderRadius: 4 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, alignItems: "center" }}>
+                <Typography variant="h6" fontWeight={700}>Danh Sách Vinh Danh ({honors.length})</Typography>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => {
+                      setCurrentHonor({ 
+                        name: "", 
+                        title: "", 
+                        category: "nhanVienXuatSac", 
+                        description: "", 
+                        imageUrl: "", 
+                        badge: defaultBadges["nhanVienXuatSac"] 
+                      });
+                      setOpenHonorDialog(true);
+                    }}
+                    sx={{ borderRadius: 2, bgcolor: "#00796b" }}
+                  >
+                    Thêm Vinh Danh
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<CloudUpload />}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    Nhập Excel
+                    <input type="file" hidden accept=".xlsx, .xls" onChange={handleHonorExcelImport} />
+                  </Button>
+                </Box>
+              </Box>
+              
+              <TableContainer sx={{ maxHeight: "calc(100vh - 350px)" }}>
+                <Table stickyHeader size="medium">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: "#f8f9fa" }}>Họ và Tên / Tập thể</TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: "#f8f9fa" }}>Chức vụ / Tiêu đề</TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: "#f8f9fa" }}>Phân loại</TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: "#f8f9fa" }}>Huy hiệu</TableCell>
+                      <TableCell sx={{ fontWeight: 700, bgcolor: "#f8f9fa" }} align="right">Thao Tác</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {honors.map((h) => (
+                      <TableRow key={h.id} hover>
+                        <TableCell>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                            <Avatar src={h.imageUrl} sx={{ width: 40, height: 40 }}>{(h.name || "H").charAt(0)}</Avatar>
+                            <Typography variant="body1" fontWeight={600}>{h.name || "N/A"}</Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{h.title}</TableCell>
+                        <TableCell>
+                          <Chip label={categories[h.category] || h.category} color="primary" variant="outlined" size="small" />
+                        </TableCell>
+                        <TableCell>{h.badge}</TableCell>
+                        <TableCell align="right">
+                          <IconButton onClick={() => { setCurrentHonor(h); setOpenHonorDialog(true); }}>
+                            <Edit color="primary" />
+                          </IconButton>
+                          <IconButton color="error" onClick={() => handleDeleteHonor(h.id)}>
+                            <Delete />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -647,6 +838,91 @@ const AdminDashboard = () => {
         <DialogActions sx={{ p: 3 }}>
           <Button onClick={() => setOpenParticipantDialog(false)}>Hủy</Button>
           <Button variant="contained" onClick={handleSaveParticipant} startIcon={<Save />} sx={{ bgcolor: "#00796b" }}>
+            Lưu
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Honor Dialog */}
+      <Dialog open={openHonorDialog} onClose={() => setOpenHonorDialog(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 700 }}>{currentHonor.id ? "Sửa Vinh Danh" : "Thêm Vinh Danh"}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Họ và Tên / Tên Tập thể"
+              value={currentHonor.name}
+              onChange={(e) => setCurrentHonor({ ...currentHonor, name: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="Chức vụ / Tiêu đề phụ"
+              value={currentHonor.title}
+              onChange={(e) => setCurrentHonor({ ...currentHonor, title: e.target.value })}
+            />
+            <TextField
+              select
+              fullWidth
+              label="Phân loại"
+              value={currentHonor.category}
+              onChange={(e) => {
+                const newCat = e.target.value;
+                // Nếu badge đang trống hoặc đang là badge mặc định của category cũ, thì cập nhật theo category mới
+                const isDefaultBadge = Object.values(defaultBadges).includes(currentHonor.badge) || !currentHonor.badge;
+                
+                setCurrentHonor({ 
+                  ...currentHonor, 
+                  category: newCat,
+                  badge: isDefaultBadge ? defaultBadges[newCat] : currentHonor.badge
+                });
+              }}
+              SelectProps={{ native: true }}
+            >
+              {Object.entries(categories).map(([key, value]) => (
+                <option key={key} value={key}>{value}</option>
+              ))}
+            </TextField>
+            <TextField
+              fullWidth
+              label="Huy hiệu (Badge text)"
+              value={currentHonor.badge}
+              onChange={(e) => setCurrentHonor({ ...currentHonor, badge: e.target.value })}
+              placeholder="Ví dụ: 🏆 TẬP THỂ XUẤT SẮC"
+            />
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label="Mô tả thành tích"
+              value={currentHonor.description}
+              onChange={(e) => setCurrentHonor({ ...currentHonor, description: e.target.value })}
+            />
+            <TextField
+              fullWidth
+              label="URL Ảnh"
+              value={currentHonor.imageUrl}
+              onChange={(e) => setCurrentHonor({ ...currentHonor, imageUrl: e.target.value })}
+            />
+            <Button
+              variant="outlined"
+              component="label"
+              startIcon={<CloudUpload />}
+              fullWidth
+              sx={{ borderRadius: 2 }}
+            >
+              Tải Ảnh
+              <input type="file" hidden accept="image/*" onChange={(e) => handleImageUpload(e, "honor")} />
+            </Button>
+            {currentHonor.imageUrl && (
+              <Box sx={{ textAlign: "center", mt: 1 }}>
+                <Avatar src={currentHonor.imageUrl} variant="rounded" sx={{ width: 100, height: 100, mx: "auto", border: "2px solid #00796b" }} />
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button onClick={() => setOpenHonorDialog(false)}>Hủy</Button>
+          <Button variant="contained" onClick={handleSaveHonor} startIcon={<Save />} sx={{ bgcolor: "#00796b" }}>
             Lưu
           </Button>
         </DialogActions>

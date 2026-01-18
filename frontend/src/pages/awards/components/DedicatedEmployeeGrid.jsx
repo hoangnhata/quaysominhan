@@ -190,7 +190,7 @@ const DedicatedEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                         />
 
                         <Avatar
-                          src={emp.image}
+                          src={emp.imageUrl}
                           className="dedicated-avatar"
                           sx={{
                             width: 100,
@@ -224,7 +224,7 @@ const DedicatedEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                             fontStyle: "italic",
                           }}
                         >
-                          {emp.department}
+                          {emp.title}
                         </Typography>
 
                         {/* Award Badge Tag */}
@@ -242,7 +242,7 @@ const DedicatedEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                             fontWeight: 600,
                           }}
                         >
-                          Dedicated Staff
+                          {emp.badge || "Dedicated Staff"}
                         </Box>
                       </CardContent>
                     </Card>

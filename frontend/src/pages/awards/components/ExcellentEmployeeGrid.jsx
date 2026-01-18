@@ -224,7 +224,7 @@ const ExcellentEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                             />
 
                             <Avatar
-                              src={emp.image}
+                              src={emp.imageUrl}
                               className="emp-avatar"
                               sx={{
                                 width: 130,
@@ -260,7 +260,7 @@ const ExcellentEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                                 letterSpacing: 1,
                               }}
                             >
-                              {emp.department}
+                              {emp.title}
                             </Typography>
 
                             {/* Award Badge Tag */}
@@ -277,7 +277,7 @@ const ExcellentEmployeeGrid = ({ employees, onEmployeeClick, onBack }) => {
                                 letterSpacing: 1,
                               }}
                             >
-                              Excellent Staff
+                              {emp.badge || "Excellent Staff"}
                             </Box>
                           </CardContent>
                         </Card>

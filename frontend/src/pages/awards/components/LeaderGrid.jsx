@@ -181,7 +181,7 @@ const LeaderGrid = ({ leaders, onBack }) => {
                       />
 
                       <Avatar
-                        src={leader.image}
+                        src={leader.imageUrl}
                         className="leader-avatar"
                         sx={{
                           width: 140,
@@ -215,7 +215,7 @@ const LeaderGrid = ({ leaders, onBack }) => {
                           fontStyle: "italic",
                         }}
                       >
-                        {leader.position}
+                        {leader.title}
                       </Typography>
 
                       {/* Award Badge Tag */}
@@ -233,7 +233,7 @@ const LeaderGrid = ({ leaders, onBack }) => {
                           fontWeight: 600,
                         }}
                       >
-                        Outstanding Leader
+                        {leader.badge || "Outstanding Leader"}
                       </Box>
                     </Paper>
                   </motion.div>

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Box, createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { Box, createTheme, ThemeProvider, CssBaseline, CircularProgress } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+import axios from "axios";
 import HomeScreen from "./components/HomeScreen";
 import OutstandingTeam from "./components/OutstandingTeam";
 import LeaderGrid from "./components/LeaderGrid";
 import ExcellentEmployeeGrid from "./components/ExcellentEmployeeGrid";
 import DedicatedEmployeeGrid from "./components/DedicatedEmployeeGrid";
 import EmployeeModal from "./components/EmployeeModal";
-import { awardsData } from "../../data/awardsData";
+
+const HONORS_API_URL = "http://localhost:8080/api/honors";
 
 // Custom Luxury Theme
 const luxuryTheme = createTheme({
@@ -41,15 +43,47 @@ const AwardsPage = () => {
   const [currentScreen, setCurrentScreen] = useState("HOME");
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [honorsData, setHonorsData] = useState({
+    tapTheXuatSac: null,
+    truongKhoaXuatSac: [],
+    nhanVienXuatSac: [],
+    nhanVienCongHien: [],
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchHonors();
     const link = document.createElement("link");
     link.href =
       "https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Be+Vietnam+Pro:wght@100;300;400;500;700;900&display=swap";
     link.rel = "stylesheet";
     document.head.appendChild(link);
-    return () => document.head.removeChild(link);
+    return () => {
+      try {
+        document.head.removeChild(link);
+      } catch (e) {}
+    };
   }, []);
+
+  const fetchHonors = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(HONORS_API_URL);
+      const data = res.data;
+      
+      const grouped = {
+        tapTheXuatSac: data.find(h => h.category === "tapTheXuatSac") || null,
+        truongKhoaXuatSac: data.filter(h => h.category === "truongKhoaXuatSac"),
+        nhanVienXuatSac: data.filter(h => h.category === "nhanVienXuatSac"),
+        nhanVienCongHien: data.filter(h => h.category === "nhanVienCongHien"),
+      };
+      setHonorsData(grouped);
+    } catch (error) {
+      console.error("Error fetching honors:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEmployeeClick = (employee) => {
     setSelectedEmployee(employee);
@@ -68,6 +102,14 @@ const AwardsPage = () => {
   };
 
   const renderScreen = () => {
+    if (loading) {
+      return (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
+          <CircularProgress color="primary" />
+        </Box>
+      );
+    }
+
     switch (currentScreen) {
       case "HOME":
         return (
@@ -82,7 +124,7 @@ const AwardsPage = () => {
         return (
           <motion.div key="team" {...pageTransition}>
             <OutstandingTeam
-              data={awardsData.tapTheXuatSac}
+              data={honorsData.tapTheXuatSac}
               onBack={() => setCurrentScreen("HOME")}
             />
           </motion.div>
@@ -91,7 +133,7 @@ const AwardsPage = () => {
         return (
           <motion.div key="leader" {...pageTransition}>
             <LeaderGrid
-              leaders={awardsData.truongKhoaXuatSac}
+              leaders={honorsData.truongKhoaXuatSac}
               onBack={() => setCurrentScreen("HOME")}
             />
           </motion.div>
@@ -100,7 +142,7 @@ const AwardsPage = () => {
         return (
           <motion.div key="excellent" {...pageTransition}>
             <ExcellentEmployeeGrid
-              employees={awardsData.nhanVienXuatSac}
+              employees={honorsData.nhanVienXuatSac}
               onEmployeeClick={handleEmployeeClick}
               onBack={() => setCurrentScreen("HOME")}
             />
@@ -110,7 +152,7 @@ const AwardsPage = () => {
         return (
           <motion.div key="dedicated" {...pageTransition}>
             <DedicatedEmployeeGrid
-              employees={awardsData.nhanVienCongHien}
+              employees={honorsData.nhanVienCongHien}
               onEmployeeClick={handleEmployeeClick}
               onBack={() => setCurrentScreen("HOME")}
             />

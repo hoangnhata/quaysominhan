@@ -10,6 +10,7 @@ import {
 import LuckyDrawPage from "./pages/LuckyDrawPage";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AwardsPage from "./pages/awards/AwardsPage";
+import HonorsListPage from "./pages/awards/HonorsListPage";
 import {
   Box,
   AppBar,
@@ -19,6 +20,7 @@ import {
   Tabs,
   Avatar,
   IconButton,
+  Button,
 } from "@mui/material";
 import {
   Settings,
@@ -37,11 +39,6 @@ const Navigation = () => {
     return null;
   }
 
-  const getTabValue = () => {
-    if (currentPath === "/admin") return 0;
-    return 0;
-  };
-
   return (
     <AppBar
       position="sticky"
@@ -51,13 +48,43 @@ const Navigation = () => {
         boxShadow: "0 10px 30px rgba(0, 0, 0, 0.1)",
       }}
     >
-      <Toolbar sx={{ justifyContent: "center", px: 4 }}>
+      <Toolbar sx={{ justifyContent: "space-between", px: 4 }}>
         <Typography
           variant="h5"
           sx={{ fontWeight: 800, color: "#fff", letterSpacing: 2 }}
         >
-          ADMIN PANEL
+          LUCKY DRAW & HONORS
         </Typography>
+        <Box sx={{ display: "flex", gap: 3 }}>
+          <Button
+            component={Link}
+            to="/admin"
+            sx={{ color: "#fff", fontWeight: 700 }}
+          >
+            ADMIN
+          </Button>
+          <Button
+            component={Link}
+            to="/honors-list"
+            sx={{ color: "#fff", fontWeight: 700 }}
+          >
+            VINH DANH
+          </Button>
+          <Button
+            component={Link}
+            to="/awards"
+            sx={{ color: "#fff", fontWeight: 700 }}
+          >
+            SLIDESHOW
+          </Button>
+          <Button
+            component={Link}
+            to="/"
+            sx={{ color: "#fff", fontWeight: 700 }}
+          >
+            QUAY SỐ
+          </Button>
+        </Box>
       </Toolbar>
     </AppBar>
   );
@@ -71,6 +98,7 @@ function AppContent() {
         <Route path="/" element={<LuckyDrawPage />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/awards" element={<AwardsPage />} />
+        <Route path="/honors-list" element={<HonorsListPage />} />
       </Routes>
     </Box>
   );
